@@ -1,0 +1,49 @@
+name: Build
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .config
+      - files/**
+      - .github/workflows/build.yml
+jobs:
+  build: 
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 2048
+          temp-reserve-mb: 1
+          swap-size-mb: 1
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare
+        run: | 
+          sudo apt install $(cat dependency) -y
+          git clone -b master https://github.com/coolsnowwolf/lede.git build
+          cp -r files build
+      - name: Compile
+        run: | 
+          mkdir output
+          cd build
+          ./scripts/feeds update -a 
+          ./scripts/feeds install -a
+          cp ../.config .
+          make defconfig
+          make download -j$(nproc)
+          make -j$(nproc)
+          rm -rf ./bin/targets/*/*/packages
+          cp bin/targets/*/*/* ../output
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt
+          path: output
+
+
