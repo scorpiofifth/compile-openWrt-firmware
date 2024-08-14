@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Prepare
         run: | 
+          sudo apt update
           sudo apt install $(cat dependency) -y
           git clone -b master https://github.com/coolsnowwolf/lede.git build
           cp -r files build
